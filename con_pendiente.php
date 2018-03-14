@@ -36,51 +36,121 @@
 			  <div class="col-md-12">
 			<div class="panel panel-default">
 				<div class="panel-heading">
-				 Realizar transacción
-				</div>        
+				 Consulta
+			</div>        
 							  
-							<div class="panel-body"> 
-								<form role="form">
-                                    <div class="row">
-                                        <div class="col-sm-6">
-                                            <div class="form-group">
-                                                <label for="moneda1">Monedas a convertir</label>
-                                                <select id="moneda1" name="moneda1" class="form-control">
-                                                    <?php 
-                                                        $sql_m1="SELECT m.id, m.monedas_cambio FROM monedas m JOIN agencias_monedas am ON m.id=am.id_moneda JOIN agencias a ON am.id_agencia=a.id WHERE a.id='3'";
-                                                        $rs_m1=mysqli_query($mysqli, $sql_m1) or die(mysqli_error());
-                                                        while ($row_m1=mysqli_fetch_array($rs_m1)) {
-                                                            echo "<option value='".$row_m1["id"]."'>";
-                                                                echo $row_m1["monedas_cambio"];
-                                                            echo "</option>";
-                                                        }
-                                                    ?>
-                                                    
-                                                </select>
-                                            </div>
-    							         </div>
-                                         <input id="tasa_cal" type="hidden">
-                                         <div class="col-sm-6">
-                                            <div class="form-group">
-                                                    <label for="disabledSelect">Cantidad</label>
-                                                    <input class="form-control" id="cantidad" type="text" placeholder="Disabled input">
-                                                </div>  
-                                         </div>
-                                     </div>
+			<div class="panel-body"> 
+				<?php
+					include("conexion/conexion.php");
 
-                                     <div class="row">
-                                         
-                                         <div class="col-sm-6">
-                                            <div class="form-group">
-                                                    <label for="disabledSelect">Resultado</label>
-                                                    <input class="form-control" id="resultado" type="text" placeholder="Disabled input" disabled="">
-                                                </div>  
-                                         </div>
-                                     </div>
-                            </div>
-				</div>
-			</div>						
-				</div>				 			
+					$sql_trans="SELECT t.codigo,t.cantidad1,t.cantidad2,t.moneda, t.id_usuario, t.id_metodo,t.tasa,t.referencia, t.banco_origen, t.banco_destino,t.n_doc_destino,CONCAT (t.nombres_destino, ' ',t.apellidos_destino)as nombre_destino,t.correo_destino,t.banco_destino,t.tipo_cuenta_destino,t.nro_cuenta_destino, e.fecha, e.hora  FROM transacciones t JOIN trans_estados e ON t.codigo=e.cod_trans WHERE t.codigo='".$_GET["codigo"]."'";
+					$rs_trans=mysqli_query($mysqli,$sql_trans) or die(mysqli_error());
+					$row_trans=mysqli_fetch_array($rs_trans);
+
+					$sql_m="SELECT monedas_cambio FROM monedas WHERE id='".$row_trans["moneda"]."'";
+					$rs_m=mysqli_query($mysqli,$sql_m) or die(mysqli_error());
+                    $row_m=mysqli_fetch_array($rs_m);
+
+                    $sql_u="SELECT n_doc, CONCAT(nombres, ' ', apellidos) as nombre, correo, telefono FROM usuarios WHERE id='".$row_trans["id_usuario"]."'";
+					$rs_u=mysqli_query($mysqli,$sql_u) or die(mysqli_error());
+					$row_u=mysqli_fetch_array($rs_u);
+
+					$sql_metodo="SELECT metodo_pago FROM metodos_pago WHERE id='".$row_trans["id_metodo"]."'";
+					$rs_metodo=mysqli_query($mysqli,$sql_metodo) or die(mysqli_error());
+					$row_metodo=mysqli_fetch_array($rs_metodo);
+
+					$sql_banco_destino="SELECT banco FROM bancos WHERE id='".$row_trans["banco_destino"]."'";
+					$rs_banco_destino=mysqli_query($mysqli,$sql_banco_destino) or die(mysqli_error());
+					$row_banco_destino=mysqli_fetch_array($rs_banco_destino);
+
+
+					if ($row_trans["id_metodo"] !=1) {
+						$sql_banco_origen="SELECT banco FROM bancos WHERE id='".$row_trans["banco_origen"]."'";
+						$rs_banco_origen=mysqli_query($mysqli,$sql_banco_origen) or die(mysqli_error());
+						$row_banco_origen=mysqli_fetch_array($rs_banco_origen);
+					}
+				?>
+				<h4>Fecha y Hora de Transacción: <?php echo $row_trans["fecha"]." ".$row_trans["hora"]."</h4>"; ?>
+				<div class="table-responsive">
+                    <table class="table table-striped table-bordered table-hover" id="dataTables-example">
+                    	<thead>
+                        	<tr class="info">
+                            	<th>Datos Usuario</th>
+                            	<th>Datos Transacción</th>
+                        	</tr>
+                    	</thead>
+                    	<tbody>
+                    		<tr>
+                    			<td><b>N. Documento:</b> <?php echo $row_u["n_doc"];?></td>
+                    			<td><b>Codigo:</b> <?php echo $_GET["codigo"];?></td>
+                    		</tr>
+                    		<tr>
+                    			<td><b>Nombre Completo:</b> <?php echo $row_u["nombre"];?></td>
+                    			<td><b>Moneda:</b> <?php echo $row_m["monedas_cambio"];?></td>
+                    		</tr>
+                    		<tr>
+                    			<td><b>Correo:</b> <?php echo $row_u["correo"];?></td>
+                    			<td><b>Pago:</b> <?php echo $row_trans["cantidad1"];?></td>
+                    		</tr>
+                    		<tr>
+                    			<td><b>Telefono:</b> <?php echo $row_u["telefono"];?></td>
+                    			<td><b>Cambio:</b> <?php echo $row_trans["cantidad2"];?></td>
+                    		</tr>
+                    		<tr>
+                    			<td>-------------------------------------</td>
+                    			<td><b>Tasa:</b> <?php echo $row_trans["tasa"];?></td>
+                    		</tr>
+                    </table>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped table-bordered table-hover" id="dataTables-example">
+                    	<thead>
+                        	<tr class="success">
+                            	<th>Datos Origen</th>
+                            	<th>Datos Destino</th>
+                        	</tr>
+                    	</thead>
+                    	<tbody>
+                    		<tr>
+                    			<td><b>Metodo:</b> <?php echo $row_metodo["metodo_pago"];?></td>
+                    			<td><b>Banco:</b> <?php echo $row_banco_destino["banco"];?></td>
+                    		</tr>
+                    		<tr>
+                    			<td><b>Referencia:</b> <?php echo $row_trans["referencia"];?></td>
+                    			<td><b>Tipo de Cuenta:</b> <?php echo $row_trans["tipo_cuenta_destino"];?></td>
+                    		</tr>
+                    		<tr>
+                    			<?php
+                    				if ($row_trans["id_metodo"] !=1) {
+                    			?>
+                    				<td><b>Banco:</b> <?php echo $row_banco_origen["banco"];?></td>
+                    			<?php } else {?>
+                    				<td>-------------------------------------</td>
+                    			<?php } ?>
+                    			
+                    			
+                    			<td><b>N. Cuenta:</b> <?php echo $row_trans["nro_cuenta_destino"];?></td>
+                    		</tr>
+                    		<tr>
+                    			<td>-------------------------------------</td>
+                    			<td><b>N. Doc destino:</b> <?php echo $row_trans["n_doc_destino"];?></td>
+                    			
+                    		</tr>
+                    		<tr>
+                    			<td>-------------------------------------</td>
+                    			<td><b>Nombre Completo:</b> <?php echo $row_trans["nombre_destino"];?></td>
+                    		</tr>
+                    		<tr>
+                    			<td>-------------------------------------</td>
+                    			<td><b>Correo:</b> <?php echo $row_trans["correo_destino"];?></td>
+                    		</tr>
+                    </table>
+                </div>
+                <center><a href="" class="btn btn-success">Procesar</a>
+                <a href="" class="btn btn-danger">Anular</a></center>
+            </div>
+								
+								 			
 									
 				  <div class="row">
                     <div class="col-md-6">
@@ -493,53 +563,6 @@
       <!-- Custom Js -->
     <script src="assets/js/custom-scripts.js"></script>
 
-    <script>
-     
-        $('#moneda1').on('change',function(){
-            var valor = $(this).val();
-             alert(valor);
-            var dataString = 'moneda='+valor;
-            $("#cantidad").val("");
-            $("#resultado").val("");
-            $.ajax({
-
-                url: "ajax/tasa.php",
-                type: "POST",
-                data: dataString,
-                success: function (resp) {
-               
-                    $("#tasa_cal").val(resp);                        
-                    console.log(resp);
-                },
-                error: function (jqXHR,estado,error){
-                    alert("error");
-                    console.log(estado);
-                    console.log(error);
-                },
-                complete: function (jqXHR,estado){
-                    console.log(estado);
-                }
-
-                        
-            })
-                
-        });
-
-        $("#cantidad").keyup(function(){
-            if ($("#moneda1").val()==1) {
-                var conversion=$("#cantidad").val() / $("#tasa_cal").val();
-                $("#resultado").val(conversion);
-            }
-
-            if ($("#moneda1").val()==2) {
-                var conversion=$("#cantidad").val() * $("#tasa_cal").val();
-                $("#resultado").val(conversion);
-            }
-        });
-        
-        
-      
-    </script>
  
 </body>
 </html>
